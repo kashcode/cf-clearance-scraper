@@ -81,7 +81,6 @@ async def cf_clearance():
         return {"error": "Failed to retrieve a Cloudflare clearance cookie."}, 400
     
     result = {
-        "cf_clearance": clearance_cookie["value"],
         "user_agent": user_agent,
         "all_cookies": all_cookies 
     }
