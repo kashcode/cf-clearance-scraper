@@ -3,3 +3,5 @@ selenium_authenticated_proxy==1.1.2
 user_agents==2.2.0
 zendriver==0.14.2
 Quart==0.20.0
+aiohttp==3.13.1
+aiodns==3.5.0

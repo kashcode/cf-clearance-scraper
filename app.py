@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from quart import Quart, request
+import aiohttp
 
 from main import ChallengePlatform, CloudflareSolver, get_chrome_user_agent
 
@@ -61,7 +62,7 @@ async def cf_clearance():
             challenge_platform = await solver.detect_challenge()
 
             if challenge_platform is None:
-                logging.error("No Cloudflare challenge detected.")
+                logging.info("No Cloudflare challenge detected.")
                 return
 
             logging.info(challenge_messages[challenge_platform])
@@ -72,17 +73,22 @@ async def cf_clearance():
                 pass
 
             all_cookies = await solver.get_cookies()
-            clearance_cookie = solver.extract_clearance_cookie(all_cookies)
-
+            clearance_cookie = solver.extract_clearance_cookie(all_cookies)        
+        
         user_agent = await solver.get_user_agent()
+        cookies = await solver.driver.cookies.get_all()
 
-    if clearance_cookie is None:
-        logging.error("Failed to retrieve a Cloudflare clearance cookie.")
-        return {"error": "Failed to retrieve a Cloudflare clearance cookie."}, 400
+        headers = {'User-Agent': user_agent}
+
+        # Convert zendriver Cookie objects -> dict
+        cookie_dict = {c.name: c.value for c in cookies}
+
+        async with aiohttp.ClientSession(cookies=cookie_dict, headers=headers) as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    logging.error(f"Failed to retrieve response, status code: {resp.status}")
+                    return {"error": f"Failed to retrieve response, status code: {resp.status}"}, 400
+
+                content = await resp.read()
     
-    result = {
-        "user_agent": user_agent,
-        "all_cookies": all_cookies 
-    }
-
-    return result
+    return content
